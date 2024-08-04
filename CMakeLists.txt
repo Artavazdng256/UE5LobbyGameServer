@@ -29,6 +29,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         ue5lobbygameserver.h ue5lobbygameserver.cpp
+        networkdatapacket.h networkdatapacket.cpp
 
     )
 # Define target properties for Android with Qt 6 as:
