@@ -1,47 +1,61 @@
 #include "ue5lobbygameserver.h"
 
+#include <QStringLiteral>
+#include <QWebSocket>
+
 UE5LobbyGameServer::UE5LobbyGameServer(QObject *parent)
     : QObject{parent}
 {
-    UdpSocket = new QUdpSocket(this);
 }
 
 UE5LobbyGameServer::~UE5LobbyGameServer()
 {
-    if(nullptr != UdpSocket)
+    if(nullptr != WebSocketServer)
     {
-        UdpSocket->close();
-        qDebug()<< "Close Udp socket \n";
+        WebSocketServer->close();
+        qDeleteAll(Clients.begin(), Clients.end());
     }
 }
 
-void UE5LobbyGameServer::processPendingDatagrams()
-{
-    while (UdpSocket->hasPendingDatagrams()) {
-        QByteArray datagram;
-        datagram.resize(UdpSocket->pendingDatagramSize());
-        QHostAddress sender;
-        quint16 senderPort;
-        UdpSocket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
-        QString datagramString = QString::fromUtf8(datagram);
-        qDebug()<<datagramString;
 
-    }
-}
-
-void UE5LobbyGameServer::StartServer(quint16 port)
+void UE5LobbyGameServer::StartServer(quint16 Port)
 {
-    if(nullptr !=UdpSocket)
+    QString  ServerName = "Labby Server";
+    WebSocketServer = new QWebSocketServer(ServerName, QWebSocketServer::NonSecureMode, this);
+    if(nullptr != WebSocketServer)
     {
-
-        if(const bool bStatus = UdpSocket->bind(QHostAddress::Any, port); bStatus)
+        if( const bool Status = WebSocketServer->listen(QHostAddress::Any, Port); Status)
         {
-            qDebug() << "Rebound to new port successfully.";
-            connect(UdpSocket, &QUdpSocket::readyRead, this, &UE5LobbyGameServer::processPendingDatagrams);
+            qDebug() << "WebSocket server started on port: "<<Port;
+            connect(WebSocketServer, &QWebSocketServer::newConnection, this, &UE5LobbyGameServer::onNewConnection);
         }
         else
         {
-            qWarning() << "Failed to bind to new port:" << UdpSocket->errorString();
+            qDebug()<< "WebSocket server failed to start";
         }
     }
+}
+
+
+void UE5LobbyGameServer::onNewConnection()
+{
+    QWebSocket * client = WebSocketServer->nextPendingConnection();
+
+    connect(client, &QWebSocket::textMessageReceived, this, &UE5LobbyGameServer::ProcessTextMessage);
+    connect(client, &QWebSocket::disconnected, this, &UE5LobbyGameServer::SocketDisconnected);
+
+    // Add client into list
+    Clients << client;
+
+    qDebug() << "New client connected";
+}
+
+void UE5LobbyGameServer::ProcessTextMessage(QString message)
+{
+
+}
+
+void UE5LobbyGameServer::SocketDisconnected()
+{
+
 }

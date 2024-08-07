@@ -2,7 +2,7 @@
 #define UE5LOBBYGAMESERVER_H
 
 #include <QObject>
-#include <QUdpSocket>
+#include <QWebSocketServer>
 
 class UE5LobbyGameServer : public QObject
 {
@@ -16,15 +16,21 @@ signals:
 
 private slots:
 
-    void processPendingDatagrams();
+    void onNewConnection();
 
 private:
 
-    QUdpSocket * UdpSocket = nullptr;
+    QWebSocketServer * WebSocketServer = nullptr;
+
+    QList<QWebSocket *> Clients;
 
 public:
 
-    void StartServer(quint16 port);
+    void StartServer(quint16 Port);
+
+    void ProcessTextMessage(QString message);
+
+    void SocketDisconnected();
 };
 
 #endif // UE5LOBBYGAMESERVER_H
