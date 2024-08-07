@@ -39,15 +39,17 @@ void UE5LobbyGameServer::StartServer(quint16 Port)
 
 void UE5LobbyGameServer::onNewConnection()
 {
-    QWebSocket * client = WebSocketServer->nextPendingConnection();
+    if(nullptr != WebSocketServer)
+    {
+        QWebSocket * client = WebSocketServer->nextPendingConnection();
+            // connect slot
+        connect(client, &QWebSocket::textMessageReceived, this, &UE5LobbyGameServer::ProcessTextMessage);
+        connect(client, &QWebSocket::disconnected, this, &UE5LobbyGameServer::SocketDisconnected);
+        // Add client into list
+        Clients << client;
 
-    connect(client, &QWebSocket::textMessageReceived, this, &UE5LobbyGameServer::ProcessTextMessage);
-    connect(client, &QWebSocket::disconnected, this, &UE5LobbyGameServer::SocketDisconnected);
-
-    // Add client into list
-    Clients << client;
-
-    qDebug() << "New client connected";
+        qDebug() << "New client connected";
+    }
 }
 
 void UE5LobbyGameServer::ProcessTextMessage(QString message)
@@ -57,5 +59,10 @@ void UE5LobbyGameServer::ProcessTextMessage(QString message)
 
 void UE5LobbyGameServer::SocketDisconnected()
 {
-
+    QWebSocket * client = qobject_cast<QWebSocket *>(sender());
+    if (nullptr != client) {
+        Clients.removeAll(client);
+        client->deleteLater();
+        qDebug() << "Client disconnected";
+    }
 }
